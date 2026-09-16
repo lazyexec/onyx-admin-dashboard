@@ -1,5 +1,4 @@
 import React from 'react';
-import { cn } from '../../lib/utils'; // wait, I don't have this, I can create it or just use simple template literals for now
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'ghost';

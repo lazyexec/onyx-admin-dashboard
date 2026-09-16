@@ -3,16 +3,15 @@ import { createClient } from '../../lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
-
 export const metadata = {
   title: 'Login - Onyx Admin Dashboard',
 };
 
 export default async function LoginPage() {
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (session) {
+  if (user) {
     redirect('/dashboard');
   }
 
@@ -23,7 +22,7 @@ export default async function LoginPage() {
           <h1 className="text-3xl font-bold text-[color:var(--text)]">Onyx Admin</h1>
           <p className="text-[color:var(--primary)] text-sm">Sign in to access the dashboard</p>
         </div>
-        <Suspense fallback={<div>Loading form...</div>}>
+        <Suspense fallback={<div className="text-center text-[color:var(--primary)] text-sm">Loading...</div>}>
           <LoginForm />
         </Suspense>
       </div>
