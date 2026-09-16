@@ -1,5 +1,3 @@
-import { createClient } from "../../../lib/supabase/server";
-
 function browserRedirect(location: string) {
   const safeLocation = JSON.stringify(location);
   const escapedLocation = location.replace(/"/g, "&quot;");
@@ -17,37 +15,25 @@ function browserRedirect(location: string) {
 }
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get("code");
-  const authError = searchParams.get("error_description") || searchParams.get("error");
+  const url = new URL(request.url);
+  const authError = url.searchParams.get("error_description") || url.searchParams.get("error");
 
   if (authError) {
-    const redirectUrl = new URL("/login", origin);
+    const redirectUrl = new URL("/login", url.origin);
     redirectUrl.searchParams.set("error", authError);
     return browserRedirect(redirectUrl.toString());
   }
 
-  if (code) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const confirmUrl = new URL("/auth/confirm", url.origin);
+  for (const [key, value] of url.searchParams) {
+    confirmUrl.searchParams.set(key, value);
+  }
 
-    if (!error) {
-      const forwardedHost = request.headers.get("x-forwarded-host");
-      const isLocalEnv = process.env.NODE_ENV === "development";
-
-      if (!isLocalEnv && forwardedHost) {
-        return browserRedirect("https://" + forwardedHost + "/dashboard");
-      }
-
-      return browserRedirect(origin + "/dashboard");
-    }
-
-    const redirectUrl = new URL("/login", origin);
-    redirectUrl.searchParams.set("error", error.message);
+  if (!confirmUrl.searchParams.has("code")) {
+    const redirectUrl = new URL("/login", url.origin);
+    redirectUrl.searchParams.set("error", "No authorization code received");
     return browserRedirect(redirectUrl.toString());
   }
 
-  const redirectUrl = new URL("/login", origin);
-  redirectUrl.searchParams.set("error", "No authorization code received");
-  return browserRedirect(redirectUrl.toString());
+  return browserRedirect(confirmUrl.toString());
 }
