@@ -19,7 +19,7 @@ export default function DashboardTabs({ user, stats }: { user: any; stats: Dashb
   const [preview, setPreview] = useState({
     title: 'Fall promo drop',
     message: 'Get back into training with a fresh Onyx offer.',
-    bannerUrl: '',
+    imageUrl: '',
     ctaLabel: 'Open offer',
   });
 
@@ -34,12 +34,13 @@ export default function DashboardTabs({ user, stats }: { user: any; stats: Dashb
       if (result.error) {
         setMessage({ type: 'error', text: result.error });
       } else {
-        const scheduledText = result.scheduled ? 'scheduled' : 'queued';
+        const scheduledText = result.scheduled ? 'scheduled' : 'sent';
         setMessage({
           type: 'success',
-          text: `Campaign ${scheduledText} for ${result.recipientCount ?? 0} recipient${result.recipientCount === 1 ? '' : 's'}.`,
+          text: `Notification ${scheduledText} for ${result.recipientCount ?? 0} recipient${result.recipientCount === 1 ? '' : 's'}.`,
         });
         form.reset();
+        setPreview((current) => ({ ...current, imageUrl: '' }));
       }
     });
   };
@@ -48,21 +49,28 @@ export default function DashboardTabs({ user, stats }: { user: any; stats: Dashb
 
   return (
     <>
-      <nav className="flex gap-2 border-b border-[color:var(--secondary)] pb-2 overflow-x-auto">
-        <button
-          className={`inline-flex items-center gap-2 font-semibold pb-2 px-2 transition-colors ${activeTab === 'dashboard' ? 'text-[color:var(--text)] border-b-2 border-[color:var(--accent)]' : 'text-[color:var(--primary)] hover:text-[color:var(--text)]'}`}
-          onClick={() => setActiveTab('dashboard')}
-        >
-          <Activity size={16} aria-hidden="true" />
-          Dashboard
-        </button>
-        <button
-          className={`inline-flex items-center gap-2 font-semibold pb-2 px-2 transition-colors ${activeTab === 'notifications' ? 'text-[color:var(--text)] border-b-2 border-[color:var(--accent)]' : 'text-[color:var(--primary)] hover:text-[color:var(--text)]'}`}
-          onClick={() => setActiveTab('notifications')}
-        >
-          <Bell size={16} aria-hidden="true" />
-          Notifications
-        </button>
+      <nav className="flex items-center justify-between gap-3 border-b border-[color:var(--secondary)] pb-3">
+        <div className="flex min-w-0 gap-2 overflow-x-auto">
+          <button
+            className={`inline-flex cursor-pointer items-center gap-2 whitespace-nowrap font-semibold pb-2 px-2 transition-colors ${activeTab === 'dashboard' ? 'text-[color:var(--text)] border-b-2 border-[color:var(--accent)]' : 'text-[color:var(--primary)] hover:text-[color:var(--text)]'}`}
+            onClick={() => setActiveTab('dashboard')}
+          >
+            <Activity size={16} aria-hidden="true" />
+            Dashboard
+          </button>
+          <button
+            className={`inline-flex cursor-pointer items-center gap-2 whitespace-nowrap font-semibold pb-2 px-2 transition-colors ${activeTab === 'notifications' ? 'text-[color:var(--text)] border-b-2 border-[color:var(--accent)]' : 'text-[color:var(--primary)] hover:text-[color:var(--text)]'}`}
+            onClick={() => setActiveTab('notifications')}
+          >
+            <Bell size={16} aria-hidden="true" />
+            Notifications
+          </button>
+        </div>
+        <form action="/auth/signout" method="post" className="shrink-0">
+          <Button type="submit" variant="secondary" className="text-sm">
+            Logout
+          </Button>
+        </form>
       </nav>
 
       {activeTab === 'dashboard' && (
@@ -109,7 +117,7 @@ export default function DashboardTabs({ user, stats }: { user: any; stats: Dashb
           <Card>
             <CardHeader>
               <CardTitle>Campaign Composer</CardTitle>
-              <CardDescription>Create push, in-app, and banner promotions for Onyx users.</CardDescription>
+              <CardDescription>Create push and in-app notifications for Onyx users.</CardDescription>
             </CardHeader>
 
             <CardContent>
@@ -150,10 +158,9 @@ export default function DashboardTabs({ user, stats }: { user: any; stats: Dashb
                 <div className="flex flex-col gap-2">
                   <Label>Channel</Label>
                   <select name="channel" className={selectClass} disabled={isPending} defaultValue="all">
-                    <option value="all">Push + in-app + banner</option>
+                    <option value="all">Push + in-app</option>
                     <option value="push">Push notification</option>
                     <option value="in_app">In-app notification</option>
-                    <option value="banner">App banner</option>
                   </select>
                 </div>
 
@@ -168,18 +175,26 @@ export default function DashboardTabs({ user, stats }: { user: any; stats: Dashb
                 </div>
 
                 <div className="flex flex-col gap-2 lg:col-span-2">
-                  <Label>Banner image URL</Label>
-                  <div className="relative">
-                    <Image className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[color:var(--primary)]" size={16} aria-hidden="true" />
-                    <Input
-                      name="bannerUrl"
-                      type="url"
-                      placeholder="https://..."
-                      className="pl-9"
+                  <Label>Notification image</Label>
+                  <label className="flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 border border-dashed border-[color:var(--secondary)] p-4 text-center transition-colors hover:border-[color:var(--accent)]">
+                    <Image className="text-[color:var(--accent)]" size={22} aria-hidden="true" />
+                    <span className="text-sm font-semibold text-[color:var(--text)]">Upload image</span>
+                    <span className="text-xs text-[color:var(--primary)]">JPG, PNG, WebP, GIF, or AVIF up to 5 MB</span>
+                    <input
+                      name="imageFile"
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,image/avif"
+                      className="sr-only"
                       disabled={isPending}
-                      onChange={(e) => setPreview((current) => ({ ...current, bannerUrl: e.target.value }))}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        setPreview((current) => ({
+                          ...current,
+                          imageUrl: file ? URL.createObjectURL(file) : '',
+                        }));
+                      }}
                     />
-                  </div>
+                  </label>
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -218,22 +233,17 @@ export default function DashboardTabs({ user, stats }: { user: any; stats: Dashb
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-2 lg:col-span-2">
-                  <Label>Expires</Label>
-                  <Input name="expiresAt" type="datetime-local" disabled={isPending} />
-                </div>
-
                 {message && (
                   <div className={`lg:col-span-2 p-3 text-sm border ${message.type === 'error' ? 'bg-[color:var(--secondary)] text-[color:var(--text)] border-[color:var(--primary)]' : 'bg-[color:var(--background)] text-[color:var(--accent)] border-[color:var(--accent)]'}`}>
                     {message.text}
                   </div>
                 )}
 
-                <div className="lg:col-span-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm text-[color:var(--primary)]">Campaigns are stored with recipient rows for tracking and later push delivery.</p>
-                  <Button type="submit" className="inline-flex w-fit items-center gap-2" disabled={isPending}>
+                <div className="lg:col-span-2 flex flex-col gap-3 border-t border-[color:var(--secondary)] pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-[color:var(--primary)]">Images upload to Supabase Storage and notifications are stored with recipient rows.</p>
+                  <Button type="submit" className="inline-flex w-full items-center justify-center gap-2 px-5 py-3 sm:w-fit" disabled={isPending}>
                     <Send size={16} aria-hidden="true" />
-                    {isPending ? 'Queuing...' : 'Queue Campaign'}
+                    {isPending ? 'Sending...' : 'Send Notification'}
                   </Button>
                 </div>
               </form>
@@ -243,15 +253,15 @@ export default function DashboardTabs({ user, stats }: { user: any; stats: Dashb
           <Card className="h-fit">
             <CardHeader>
               <CardTitle>Preview</CardTitle>
-              <CardDescription>Approximate push and banner shape.</CardDescription>
+              <CardDescription>Approximate notification shape.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <div className="border border-[color:var(--secondary)] bg-white/40 p-4">
-                {preview.bannerUrl ? (
-                  <img src={preview.bannerUrl} alt="" className="mb-4 aspect-[16/9] w-full object-cover" />
+                {preview.imageUrl ? (
+                  <img src={preview.imageUrl} alt="" className="mb-4 aspect-[16/9] w-full object-cover" />
                 ) : (
                   <div className="mb-4 flex aspect-[16/9] items-center justify-center border border-dashed border-[color:var(--secondary)] text-sm text-[color:var(--primary)]">
-                    Banner image
+                    Notification image
                   </div>
                 )}
                 <h3 className="text-lg font-bold text-[color:var(--text)]">{preview.title}</h3>

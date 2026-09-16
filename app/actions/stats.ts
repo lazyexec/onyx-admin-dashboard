@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '../../lib/supabase/server';
+import { requireAdminUser } from '../../lib/auth/admin';
 
 type StatStatus = 'ok' | 'missing' | 'error';
 
@@ -41,6 +42,7 @@ async function countRows(client: any, table: string, label: string, detail: stri
 
 export async function getDashboardStats(): Promise<DashboardStats> {
   try {
+    await requireAdminUser();
     const supabaseAdmin = await createAdminClient();
 
     const [users, pushTargets, subscriptions, campaigns] = await Promise.all([

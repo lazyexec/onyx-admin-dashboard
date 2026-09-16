@@ -5,7 +5,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 export function Button({ className, variant = 'primary', ...props }: ButtonProps) {
-  const baseClasses = 'px-4 py-2 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseClasses = 'px-4 py-2 font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
   
   const variants = {
     primary: 'bg-[color:var(--accent)] text-[color:var(--background)] hover:bg-[color:var(--text)]',
