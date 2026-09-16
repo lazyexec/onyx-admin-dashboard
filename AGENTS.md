@@ -39,3 +39,21 @@ re-read whole files.
 After big code changes, refresh the graph with `graft build` (deterministic,
 no API key, $0).
 <!-- graft:end -->
+
+# For Styles
+  - We need a clean consistent boxy design with consistent colors and fonts.
+  - We need the margin paddings to be consistent across the dashboard.
+  - We need dashboard to be usable for mobile/desktop devices.
+  - We need award-winning style design.
+  - For fonts and colors, see .agents/styles/colors-and-fonts.md file for the color spec.
+
+  # Functionalities
+  - Display dashboard and notifications tabs.
+  - Send promotional notifications to users.
+  - Supabase managed authentication and database.
+  - Real-time updates and notifications.
+
+Backend and client codebase - ~/workbase/delivered-projects/onyx-elevate-fullstack
+
+# Main motive
+Create a admin dashboard with dashboard and notifications tab, where admin can send promotional notifications to users.
