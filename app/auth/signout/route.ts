@@ -1,12 +1,27 @@
 import { createClient } from '../../../lib/supabase/server';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { env } from 'cloudflare:workers';
 
 function isSupabaseAuthCookie(name: string) {
   return (
     name.startsWith('sb-') &&
     (name.includes('-auth-token') || name.includes('-code-verifier'))
   );
+}
+
+function getSupabaseProjectRef() {
+  const url = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+  return url ? new URL(url).hostname.split('.')[0] : null;
+}
+
+function clearCookie(response: NextResponse, name: string) {
+  response.cookies.set(name, '', {
+    path: '/',
+    maxAge: 0,
+    sameSite: 'lax',
+    secure: true,
+  });
 }
 
 function browserRedirect(location: string, response: NextResponse) {
@@ -16,9 +31,22 @@ function browserRedirect(location: string, response: NextResponse) {
   return response;
 }
 
-export async function POST() {
-  let response = new NextResponse(
-    '<!doctype html><meta http-equiv="refresh" content="0;url=/login"><script>window.location.replace("/login")</script><a href="/login">Continue to login</a>',
+async function signOut() {
+  const response = new NextResponse(
+    `<!doctype html>
+<meta http-equiv="refresh" content="0;url=/login">
+<script>
+try {
+  for (const key of Object.keys(localStorage)) {
+    if (key.startsWith('sb-') || key.includes('supabase')) localStorage.removeItem(key);
+  }
+  for (const key of Object.keys(sessionStorage)) {
+    if (key.startsWith('sb-') || key.includes('supabase')) sessionStorage.removeItem(key);
+  }
+} catch {}
+window.location.replace('/login');
+</script>
+<a href="/login">Continue to login</a>`,
     { status: 200 },
   );
 
@@ -35,9 +63,25 @@ export async function POST() {
   const cookieStore = await cookies();
   for (const cookie of cookieStore.getAll()) {
     if (isSupabaseAuthCookie(cookie.name)) {
-      response.cookies.delete(cookie.name);
+      clearCookie(response, cookie.name);
     }
+  }
+  const projectRef = getSupabaseProjectRef();
+  if (projectRef) {
+    const authCookieBase = `sb-${projectRef}-auth-token`;
+    clearCookie(response, authCookieBase);
+    clearCookie(response, `${authCookieBase}.0`);
+    clearCookie(response, `${authCookieBase}.1`);
+    clearCookie(response, `${authCookieBase}-code-verifier`);
   }
 
   return browserRedirect('/login', response);
+}
+
+export async function GET() {
+  return signOut();
+}
+
+export async function POST() {
+  return signOut();
 }
