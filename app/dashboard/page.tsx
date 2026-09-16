@@ -1,5 +1,6 @@
 import { createClient } from "../../lib/supabase/server";
 import DashboardTabs from "./DashboardTabs";
+import { getDashboardStats } from "../actions/stats";
 import { Button } from "../../components/ui/Button";
 
 export default async function DashboardPage() {
@@ -39,7 +40,7 @@ export default async function DashboardPage() {
           </form>
         </header>
 
-        <DashboardTabs user={user} />
+        <DashboardTabs user={user} stats={await getDashboardStats()} />
       </div>
     </main>
   );

@@ -9,8 +9,18 @@ function isSupabaseAuthCookie(name: string) {
   );
 }
 
-export async function POST(request: Request) {
-  const response = NextResponse.redirect(new URL('/login', request.url), { status: 302 });
+function browserRedirect(location: string, response: NextResponse) {
+  response.headers.set('content-type', 'text/html; charset=utf-8');
+  response.headers.set('cache-control', 'no-store');
+  response.headers.set('refresh', `0;url=${location}`);
+  return response;
+}
+
+export async function POST() {
+  let response = new NextResponse(
+    '<!doctype html><meta http-equiv="refresh" content="0;url=/login"><script>window.location.replace("/login")</script><a href="/login">Continue to login</a>',
+    { status: 200 },
+  );
 
   try {
     const supabase = await createClient();
@@ -29,5 +39,5 @@ export async function POST(request: Request) {
     }
   }
 
-  return response;
+  return browserRedirect('/login', response);
 }
