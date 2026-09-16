@@ -38,3 +38,27 @@ export async function createClient() {
     },
   })
 }
+
+export async function createAdminClient() {
+  const supabaseUrl = typeof process !== 'undefined' && process.env.VITE_SUPABASE_URL 
+    ? process.env.VITE_SUPABASE_URL 
+    : import.meta.env.VITE_SUPABASE_URL;
+
+  const serviceKey = typeof process !== 'undefined' && process.env.SUPABASE_SERVICE_ROLE_KEY 
+    ? process.env.SUPABASE_SERVICE_ROLE_KEY 
+    : import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!serviceKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is missing');
+  }
+
+  // We don't pass user cookies here because the service role key bypasses RLS entirely
+  // and acts as the supreme admin. It should be used for admin tasks, not user impersonation.
+  return createServerClient(supabaseUrl, serviceKey, {
+    cookies: {
+      get() { return undefined; },
+      set() {},
+      remove() {}
+    },
+  });
+}

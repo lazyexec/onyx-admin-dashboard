@@ -1,14 +1,34 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Textarea } from '../../components/ui/Textarea';
 import { Label } from '../../components/ui/Label';
+import { sendNotification } from '../actions/notifications';
 
 export default function DashboardTabs({ user }: { user: any }) {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'notifications'>('dashboard');
+  const [isPending, startTransition] = useTransition();
+  const [message, setMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    
+    startTransition(async () => {
+      setMessage(null);
+      const result = await sendNotification(formData);
+      if (result.error) {
+        setMessage({ type: 'error', text: result.error });
+      } else {
+        setMessage({ type: 'success', text: 'Notification sent successfully!' });
+        form.reset();
+      }
+    });
+  };
 
   return (
     <>
@@ -49,16 +69,25 @@ export default function DashboardTabs({ user }: { user: any }) {
           </CardHeader>
           
           <CardContent>
-            <form className="flex flex-col gap-4 max-w-lg mt-2" onSubmit={(e) => { e.preventDefault(); alert('Not implemented yet'); }}>
+            <form className="flex flex-col gap-4 max-w-lg mt-2" onSubmit={handleSubmit}>
               <div className="flex flex-col gap-2">
                 <Label>Title</Label>
-                <Input type="text" placeholder="Promo Title" required />
+                <Input name="title" type="text" placeholder="Promo Title" required disabled={isPending} />
               </div>
               <div className="flex flex-col gap-2">
                 <Label>Message</Label>
-                <Textarea placeholder="Promo Message..." required />
+                <Textarea name="message" placeholder="Promo Message..." required disabled={isPending} />
               </div>
-              <Button type="submit" className="w-fit mt-2">Send Promotion</Button>
+              
+              {message && (
+                <div className={`p-3 text-sm border ${message.type === 'error' ? 'bg-[color:var(--secondary)] text-[color:var(--text)] border-[color:var(--primary)]' : 'bg-[color:var(--background)] text-[color:var(--accent)] border-[color:var(--accent)]'}`}>
+                  {message.text}
+                </div>
+              )}
+
+              <Button type="submit" className="w-fit mt-2" disabled={isPending}>
+                {isPending ? 'Sending...' : 'Send Promotion'}
+              </Button>
             </form>
           </CardContent>
         </Card>
