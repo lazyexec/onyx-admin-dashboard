@@ -57,3 +57,10 @@ Backend and client codebase - ~/workbase/delivered-projects/onyx-elevate-fullsta
 
 # Main motive
 Create a admin dashboard with dashboard and notifications tab, where admin can send promotional notifications to users.
+
+# Production auth notes
+  - This app runs on Vinext + Cloudflare Workers. Avoid server-side redirects (`redirect()` from `next/navigation` or `NextResponse.redirect`) in auth-sensitive routes/pages such as `/dashboard` and `/auth/callback`. Vinext/Cloudflare may follow redirects during internal route/cache handling and throw Worker 1101 `Too many redirects` in production.
+  - For unauthenticated dashboard access, render a small fallback that performs a browser redirect to `/login` instead of server-redirecting.
+  - For Supabase OAuth callback success/failure, exchange the code server-side, then return an HTML response with `<meta http-equiv="refresh">` plus `window.location.replace(...)` instead of a 30x response. See `app/auth/callback/route.ts` `browserRedirect()`.
+  - Do not make `/login` depend on server-side Supabase auth checks; it should always render the form so expired/missing cookies or Worker env issues cannot lock admins out.
+  - Cloudflare production env is read from Worker bindings via `cloudflare:workers` in server code. Public Supabase vars belong in `wrangler.jsonc` `vars`; service role keys must be Cloudflare secrets, not committed.

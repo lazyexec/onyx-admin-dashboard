@@ -1,7 +1,6 @@
-import { createClient } from '../../lib/supabase/server';
-import { redirect } from 'next/navigation';
-import DashboardTabs from './DashboardTabs';
-import { Button } from '../../components/ui/Button';
+import { createClient } from "../../lib/supabase/server";
+import DashboardTabs from "./DashboardTabs";
+import { Button } from "../../components/ui/Button";
 
 export default async function DashboardPage() {
   let user = null;
@@ -18,7 +17,14 @@ export default async function DashboardPage() {
   }
 
   if (!user) {
-    redirect('/login');
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-[color:var(--background)] p-4">
+        <script dangerouslySetInnerHTML={{ __html: "window.location.replace('/login');" }} />
+        <a href="/login" className="text-sm font-semibold text-[color:var(--accent)]">
+          Continue to login
+        </a>
+      </main>
+    );
   }
 
   return (

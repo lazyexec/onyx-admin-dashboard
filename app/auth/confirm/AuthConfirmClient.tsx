@@ -12,30 +12,35 @@ export default function AuthConfirmClient() {
 
   useEffect(() => {
     const code = searchParams.get('code');
-    if (!code) {
-      setError('No authorization code found.');
-      return;
-    }
 
     let cancelled = false;
 
     (async () => {
       try {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (cancelled) return;
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (cancelled) return;
 
-        if (error) {
-          // Code may have already been consumed — check for existing session
-          const { data } = await supabase.auth.getUser();
-          if (data?.user) {
-            router.replace('/dashboard');
+          if (error) {
+            const { data } = await supabase.auth.getUser();
+            if (data?.user) {
+              router.replace('/dashboard');
+              return;
+            }
+            setError(error.message);
             return;
           }
-          setError(error.message);
+        }
+
+        const { data, error: userError } = await supabase.auth.getUser();
+        if (cancelled) return;
+
+        if (data?.user) {
+          router.replace('/dashboard');
           return;
         }
 
-        router.replace('/dashboard');
+        setError(userError?.message || 'No signed-in user found. Please try again.');
       } catch (err: any) {
         if (cancelled) return;
         setError(err?.message || 'Sign-in failed. Please try again.');

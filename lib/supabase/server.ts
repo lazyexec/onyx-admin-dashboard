@@ -1,12 +1,13 @@
 import { createServerClient } from '@supabase/ssr'
+import { env } from 'cloudflare:workers'
 import { cookies } from 'next/headers'
 
 export async function createClient() {
   const cookieStore = await cookies()
 
   return createServerClient(
-    import.meta.env.VITE_SUPABASE_URL,
-    import.meta.env.VITE_SUPABASE_ANON_KEY,
+    env.SUPABASE_URL || env.VITE_SUPABASE_URL,
+    env.SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
@@ -29,14 +30,14 @@ export async function createClient() {
 }
 
 export async function createAdminClient() {
-  const serviceKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!serviceKey) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY is missing');
   }
 
   return createServerClient(
-    import.meta.env.VITE_SUPABASE_URL,
+    env.SUPABASE_URL || env.VITE_SUPABASE_URL,
     serviceKey,
     {
       cookies: {
