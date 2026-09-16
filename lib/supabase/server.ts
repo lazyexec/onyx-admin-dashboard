@@ -12,7 +12,7 @@ export async function createClient() {
         getAll() {
           return cookieStore.getAll()
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet, _headers) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
@@ -35,8 +35,6 @@ export async function createAdminClient() {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY is missing');
   }
 
-  // We don't pass user cookies here because the service role key bypasses RLS entirely
-  // and acts as the supreme admin. It should be used for admin tasks, not user impersonation.
   return createServerClient(
     import.meta.env.VITE_SUPABASE_URL,
     serviceKey,

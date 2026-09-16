@@ -1,26 +1,28 @@
-import { createClient } from '../../../lib/supabase/server';
 import { NextResponse } from 'next/server';
 
+// Redirect to a client-side page that will handle the PKCE code exchange.
+// Supabase PKCE stores the code_verifier in a browser cookie that's only
+// accessible client-side. Server-side exchangeCodeForSession on Cloudflare
+// Workers can't reliably read it, causing Worker crashes.
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? '/dashboard';
+  const url = new URL(request.url);
+  const code = url.searchParams.get('code');
+  const error = url.searchParams.get('error_description') || url.searchParams.get('error');
 
-  // Sanitize redirect target to prevent open redirect attacks
-  const safeNext = (next.startsWith('/') && !next.startsWith('//')) ? next : '/dashboard';
-
-  try {
-    if (code) {
-      const supabase = await createClient();
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
-      if (!error) {
-        return NextResponse.redirect(`${origin}${safeNext}`);
-      }
-      console.error("Auth code exchange failed:", error.message);
-    }
-    return NextResponse.redirect(`${origin}/login?error=Authentication%20failed`);
-  } catch (error: any) {
-    console.error("Auth callback error:", error);
-    return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error?.message || "Internal Server Error")}`);
+  if (error) {
+    return NextResponse.redirect(
+      new URL(`/login?error=${encodeURIComponent(error)}`, url.origin)
+    );
   }
+
+  if (!code) {
+    return NextResponse.redirect(
+      new URL('/login?error=No%20authorization%20code%20received', url.origin)
+    );
+  }
+
+  // Forward the code to the client-side callback page
+  return NextResponse.redirect(
+    new URL(`/auth/confirm?code=${encodeURIComponent(code)}`, url.origin)
+  );
 }

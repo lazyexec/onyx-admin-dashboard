@@ -4,8 +4,18 @@ import DashboardTabs from './DashboardTabs';
 import { Button } from '../../components/ui/Button';
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  let user = null;
+
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.auth.getUser();
+    if (error) {
+      console.error("Dashboard getUser error:", error.message);
+    }
+    user = data?.user ?? null;
+  } catch (err: any) {
+    console.error("Dashboard server error:", err);
+  }
 
   if (!user) {
     redirect('/login');
