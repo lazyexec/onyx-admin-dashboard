@@ -1,6 +1,8 @@
 import LoginForm from './LoginForm';
 import { createClient } from '../../lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
+
 
 export const metadata = {
   title: 'Login - Onyx Admin Dashboard',
@@ -21,8 +23,9 @@ export default async function LoginPage() {
           <h1 className="text-3xl font-bold text-[color:var(--text)]">Onyx Admin</h1>
           <p className="text-[color:var(--primary)] text-sm">Sign in to access the dashboard</p>
         </div>
-        
-        <LoginForm />
+        <Suspense fallback={<div>Loading form...</div>}>
+          <LoginForm />
+        </Suspense>
       </div>
     </main>
   );
