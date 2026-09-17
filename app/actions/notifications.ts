@@ -199,6 +199,7 @@ export async function sendNotification(formData: FormData) {
     recipientCount: ids.size,
     scheduled: Boolean(scheduledFor),
     inAppCreated: dispatched?.inAppCreated ?? 0,
-    pushQueued: dispatched?.pushQueued ?? 0,
+    pushQueued: dispatched?.pushSent ?? 0,
+    pushSent: dispatched?.pushSent ?? 0,
   };
 }

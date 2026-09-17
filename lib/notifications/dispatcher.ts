@@ -1,10 +1,11 @@
 import { createAdminClient } from '../supabase/server';
+import { sendFcmNotification } from './fcm';
 
 type DispatchResult = {
   campaignId: string;
   recipients: number;
   inAppCreated: number;
-  pushQueued: number;
+  pushSent: number;
   status: 'sent' | 'queued' | 'failed';
   error?: string;
 };
@@ -33,7 +34,7 @@ export async function dispatchCampaign(supabaseAdmin: any, campaignId: string): 
       campaignId,
       recipients: 0,
       inAppCreated: 0,
-      pushQueued: 0,
+      pushSent: 0,
       status: 'failed',
       error: campaignError?.message ?? 'Campaign not found',
     };
@@ -51,7 +52,7 @@ export async function dispatchCampaign(supabaseAdmin: any, campaignId: string): 
       campaignId,
       recipients: 0,
       inAppCreated: 0,
-      pushQueued: 0,
+      pushSent: 0,
       status: 'failed',
       error: deliveriesError.message,
     };
@@ -64,7 +65,7 @@ export async function dispatchCampaign(supabaseAdmin: any, campaignId: string): 
       .update({ status: 'sent', sent_at: new Date().toISOString() })
       .eq('id', campaignId);
 
-    return { campaignId, recipients: 0, inAppCreated: 0, pushQueued: 0, status: 'sent' };
+    return { campaignId, recipients: 0, inAppCreated: 0, pushSent: 0, status: 'sent' };
   }
 
   await supabaseAdmin
@@ -73,7 +74,7 @@ export async function dispatchCampaign(supabaseAdmin: any, campaignId: string): 
     .eq('id', campaignId);
 
   let inAppCreated = 0;
-  let pushQueued = 0;
+  let pushSent = 0;
   const now = new Date().toISOString();
 
   if (wantsInApp(campaign.channel)) {
@@ -100,38 +101,43 @@ export async function dispatchCampaign(supabaseAdmin: any, campaignId: string): 
         .from('admin_notification_campaigns')
         .update({ status: 'failed' })
         .eq('id', campaignId);
-      return { campaignId, recipients: rows.length, inAppCreated, pushQueued, status: 'failed', error: error.message };
+      return { campaignId, recipients: rows.length, inAppCreated, pushSent, status: 'failed', error: error.message };
     }
 
     if (!error) inAppCreated = notificationRows.length;
   }
 
   if (wantsPush(campaign.channel)) {
-    const pushRows = rows.map((row: any) => ({
-      campaign_id: campaignId,
-      user_id: row.user_id,
-      title: campaign.title,
-      message: campaign.message,
-      image_url: campaign.image_url,
-      deep_link: campaign.deep_link,
-      priority: campaign.priority,
-      status: 'queued',
-      created_at: now,
-    }));
-
-    const { error } = await supabaseAdmin
-      .from('admin_notification_push_outbox')
-      .upsert(pushRows, { onConflict: 'campaign_id,user_id', ignoreDuplicates: true });
+    const userIds = rows.map((row: any) => row.user_id);
+    const { data: subscriptions, error } = await supabaseAdmin
+      .from('push_subscriptions')
+      .select('user_id, endpoint, platform')
+      .in('user_id', userIds);
 
     if (error && !isMissingTable(error)) {
       await supabaseAdmin
         .from('admin_notification_campaigns')
         .update({ status: 'failed' })
         .eq('id', campaignId);
-      return { campaignId, recipients: rows.length, inAppCreated, pushQueued, status: 'failed', error: error.message };
+      return { campaignId, recipients: rows.length, inAppCreated, pushSent, status: 'failed', error: error.message };
     }
 
-    if (!error) pushQueued = pushRows.length;
+    for (const subscription of subscriptions ?? []) {
+      if (!subscription.endpoint || String(subscription.endpoint).startsWith('http')) continue;
+
+      const result = await sendFcmNotification({
+        token: subscription.endpoint,
+        title: campaign.title,
+        body: campaign.message,
+        imageUrl: campaign.image_url,
+        data: {
+          url: campaign.deep_link || '/my-library',
+          campaignId,
+        },
+      });
+
+      if (result.success) pushSent++;
+    }
   }
 
   const deliveryIds = rows.map((row: any) => row.id);
@@ -142,15 +148,15 @@ export async function dispatchCampaign(supabaseAdmin: any, campaignId: string): 
 
   await supabaseAdmin
     .from('admin_notification_campaigns')
-    .update({ status: pushQueued > 0 && inAppCreated === 0 ? 'sent' : 'sent', sent_at: now })
+    .update({ status: 'sent', sent_at: now })
     .eq('id', campaignId);
 
   return {
     campaignId,
     recipients: rows.length,
     inAppCreated,
-    pushQueued,
-    status: pushQueued > 0 && inAppCreated === 0 ? 'queued' : 'sent',
+    pushSent,
+    status: 'sent',
   };
 }
 
