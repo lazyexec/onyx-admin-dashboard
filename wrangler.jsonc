@@ -19,10 +19,6 @@
 	"images": {
 		"binding": "IMAGES"
 	},
-	"vars": {
-		"SUPABASE_URL": "https://slthcztfpknepbddpzxa.supabase.co",
-		"SUPABASE_PUBLISHABLE_KEY": "sb_publishable_6jRtRIzEIDmxwST6Du3Cdg_JOzzyXxy"
-	},
 	"observability": {
 		"enabled": true
 	},
