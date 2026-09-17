@@ -3,24 +3,28 @@
  * https://developers.cloudflare.com/workers/wrangler/configuration/
  */
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "onyx-admin-dashboard",
-	"compatibility_date": "2026-09-16",
-	"compatibility_flags": ["nodejs_compat"],
-	"main": "vinext/server/fetch-handler",
-	"assets": {
-		"directory": "dist/client",
-		"not_found_handling": "none",
-		"binding": "ASSETS"
-	},
-	"cache": {
-		"enabled": true
-	},
-	"images": {
-		"binding": "IMAGES"
-	},
-	"observability": {
-		"enabled": true
-	},
-	"upload_source_maps": true
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "onyx-admin-dashboard",
+  "compatibility_date": "2026-09-16",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "vinext/server/fetch-handler",
+  "assets": {
+    "directory": "dist/client",
+    "not_found_handling": "none",
+    "binding": "ASSETS",
+  },
+  "cache": {
+    "enabled": true,
+  },
+  "images": {
+    "binding": "IMAGES",
+  },
+  "observability": {
+    "enabled": true,
+  },
+  "upload_source_maps": true,
+  "vars": {
+    "VITE_SUPABASE_URL": "https://slthcztfpknepbddpzxa.supabase.co",
+    "VITE_SUPABASE_ANON_KEY": "sb_publishable_6jRtRIzEIDmxwST6Du3Cdg_JOzzyXxy",
+  },
 }
